@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-08-17
+
+### Added
+- **API Key Authentication Support** - Optional authentication for secured Moonraker instances
+- HTTP header support with `X-Api-Key` for authenticated requests
+- Enhanced configuration options in plugin settings
+- Improved security for production environments
+
+### Changed
+- Updated all API requests to support optional authentication headers
+- Enhanced documentation with API key setup instructions
+- Improved error handling for authentication failures
+
+### Security
+- Added support for secured Moonraker installations
+- Optional API key authentication for enhanced security
+
 ## [1.3.0] - 2025-08-17
 
 ### Added

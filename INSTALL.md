@@ -18,6 +18,31 @@ This guide provides detailed installation instructions for the Moonraker Domotic
 - Python 3.x
 - `requests` library (usually included with Domoticz)
 
+## Optional: API Key Setup
+
+For secured Moonraker instances, you can configure API key authentication:
+
+### 1. Generate API Key
+```bash
+# SSH to your printer
+cd ~/moonraker
+scripts/generate-api-key.py
+```
+
+### 2. Configure Moonraker
+Add to your `moonraker.conf`:
+```ini
+[authorization]
+api_key_file: ~/printer_data/moonraker.api
+trusted_clients:
+    192.168.1.0/24  # Your network range
+    127.0.0.1
+```
+
+### 3. Use in Plugin
+- Enter the generated API key in the "API Key" field when configuring the hardware
+- Leave blank for anonymous access (if no authentication required)
+
 ## Installation Methods
 
 ### Method 1: Git Clone (Recommended)
@@ -99,6 +124,7 @@ sudo /path/to/domoticz -daemon
 3. **Configure Settings**
    - **Moonraker API Address**: Your printer's IP address (e.g., "192.168.1.100")
    - **Port**: Moonraker port (default: 7125)
+   - **API Key**: Optional authentication key (leave blank for anonymous access)
    - **Polling Interval**: Update frequency in seconds (recommended: 10)
    - **Logging**: Choose logging level (Normal for production, Debug for troubleshooting)
 
@@ -169,12 +195,24 @@ sudo systemctl restart domoticz
 # Test Moonraker API manually
 curl http://YOUR_PRINTER_IP:7125/printer/info
 
+# Test with API key (if using authentication)
+curl -H "X-Api-Key: YOUR_API_KEY" http://YOUR_PRINTER_IP:7125/printer/info
+
 # Check network connectivity
 ping YOUR_PRINTER_IP
 
 # Verify Moonraker is running
 ssh pi@your-printer
 sudo systemctl status moonraker
+```
+
+### Authentication Issues
+```bash
+# Check API key format
+# API keys are typically 32-character hex strings
+
+# Verify moonraker.conf authorization section
+# Ensure trusted_clients includes your Domoticz server IP
 ```
 
 ### Python Dependencies

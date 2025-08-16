@@ -36,6 +36,7 @@ A comprehensive Domoticz plugin for monitoring Moonraker-based 3D printers (Klip
 ### 🔌 Remote Control
 - **System Shutdown** - Safely shutdown printer host system via Domoticz switch
 - **Connection Monitoring** - Automatic detection of printer availability
+- **API Key Support** - Optional authentication for secured Moonraker instances
 
 ## Requirements
 
@@ -43,6 +44,7 @@ A comprehensive Domoticz plugin for monitoring Moonraker-based 3D printers (Klip
 - **3D Printer** running Klipper firmware with Moonraker API
 - **Network connectivity** between Domoticz and printer
 - **Python requests library** (usually pre-installed with Domoticz)
+- **Optional: API Key** for secured Moonraker installations
 
 ## Compatible Printers
 
@@ -71,6 +73,7 @@ sudo systemctl restart domoticz
    - **Name**: Give your printer a name (e.g., "My 3D Printer")
    - **Moonraker API Address**: IP address of your printer (e.g., "192.168.1.100")
    - **Port**: Moonraker port (default: 7125)
+   - **API Key**: Optional authentication key (leave blank for anonymous access)
    - **Polling Interval**: Update frequency in seconds (default: 10)
    - **Logging Level**: Choose logging verbosity
 
@@ -93,7 +96,42 @@ provider: systemd_dbus
 
 [history]
 # Required for historical statistics
+
+# Optional: API Key authentication
+[authorization]
+trusted_clients:
+    192.168.1.0/24
+    127.0.0.1
+cors_domains:
+    *.lan
+    *.local
+    *://localhost
+    *://localhost:*
+    *://my.mainsail.xyz
+    *://app.fluidd.xyz
+
+# API Key configuration (optional)
+[secrets]
+# Create API keys for secure access
 ```
+
+### API Key Setup (Optional)
+For secured Moonraker instances:
+
+1. **Generate API Key** in Moonraker:
+   ```bash
+   # SSH to your printer
+   cd ~/moonraker
+   scripts/generate-api-key.py
+   ```
+
+2. **Configure in moonraker.conf**:
+   ```ini
+   [authorization]
+   api_key_file: ~/printer_data/moonraker.api
+   ```
+
+3. **Use in Domoticz**: Enter the generated API key in the plugin settings
 
 ### Network Access
 Make sure your Domoticz server can reach your printer:
@@ -154,6 +192,11 @@ return commandArray
 - Verify temperature sensor names in your Klipper configuration
 - Check if sensors are properly configured in `printer.cfg`
 
+### Authentication Errors
+- Verify API key is correct if using authentication
+- Check Moonraker authorization configuration
+- Ensure trusted clients include Domoticz server IP
+
 ### Historical Data Missing
 - Ensure Moonraker `[history]` section is enabled
 - Wait for plugin to complete first polling cycle
@@ -169,6 +212,8 @@ This plugin utilizes these Moonraker API endpoints:
 - `/printer/objects/query` - Real-time printer status and temperatures
 - `/server/history/totals` - Historical print statistics  
 - `/machine/shutdown` - System shutdown command
+
+**Authentication**: All endpoints support optional API key authentication via `X-Api-Key` header.
 
 ## Contributing
 

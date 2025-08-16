@@ -2,7 +2,7 @@
 <plugin 
     key="MoonrakerDomoticz" 
     name="Moonraker 3D Printer Monitoring"
-    version="1.3"
+    version="1.4"
     author="Klym Tatarnikov"
     externallink="https://github.com/klym-tatarnikov/MoonrakerDomoticz">
    
@@ -19,6 +19,7 @@
             <li><b>Historical Statistics:</b> Total jobs, print time, filament usage, and longest print records</li>
             <li><b>Remote Shutdown:</b> Safely shutdown the printer system via Domoticz switch</li>
             <li><b>Connection Monitoring:</b> Automatic detection of printer availability</li>
+            <li><b>API Key Support:</b> Optional authentication for secured Moonraker instances</li>
         </ul>
         <br/>
         <h3>Requirements:</h3>
@@ -26,6 +27,15 @@
             <li>Moonraker API enabled on your 3D printer</li>
             <li>Network connectivity between Domoticz and printer</li>
             <li>Python requests library</li>
+            <li>Optional: API key for secured Moonraker installations</li>
+        </ul>
+        <br/>
+        <h3>Configuration:</h3>
+        <ul>
+            <li><b>Moonraker API Address:</b> IP address of your printer (e.g., 192.168.1.100)</li>
+            <li><b>Port:</b> Moonraker port (default: 7125)</li>
+            <li><b>API Key:</b> Optional authentication key for secured instances</li>
+            <li><b>Polling Interval:</b> Update frequency in seconds (recommended: 10)</li>
         </ul>
         <br/>
         Compatible with popular 3D printer firmwares using Moonraker: Klipper, Mainsail, Fluidd
@@ -33,6 +43,7 @@
     <params>
         <param field="Address" label="Moonraker API Address" width="300px" required="true" default="localhost"/>
         <param field="Port" label="Port" width="300px" required="true" default="7125"/>
+        <param field="Username" label="API Key (Optional)" width="300px" required="false" default=""/>
         <param field="Mode1" label="Polling Interval (seconds)" width="75px" required="true" default="10"/>
         <param field="Mode6" label="Logging" width="75px">
             <options>
@@ -55,6 +66,7 @@ class BasePlugin:
     def __init__(self):
         self.moonraker_url = None
         self.poll_interval = 10
+        self.api_key = None
         self.sensor_keys = {
             # Temperature sensors (Temperature Sensor type)
             "extruder_temp": ("Extruder Temperature", "Temperature Sensor", "°C"),
@@ -95,8 +107,25 @@ class BasePlugin:
 
     def onStart(self):
         Domoticz.Log("Moonraker Plugin Starting...")
+        
+        # Set debug level based on user selection
+        if Parameters["Mode6"] == "Debug":
+            Domoticz.Debugging(2)
+            Domoticz.Debug("Debug logging enabled")
+        elif Parameters["Mode6"] == "Verbose":
+            Domoticz.Debugging(1)
+            Domoticz.Debug("Verbose logging enabled")
+        else:
+            Domoticz.Debugging(0)
+        
         self.moonraker_url = f"http://{Parameters['Address']}:{Parameters['Port']}"
         self.poll_interval = int(Parameters["Mode1"])
+        self.api_key = Parameters.get("Username", "").strip()
+        
+        if self.api_key:
+            Domoticz.Debug(f"API Key configured: {self.api_key[:8]}..." if len(self.api_key) > 8 else "API Key configured")
+        else:
+            Domoticz.Debug("No API Key configured - using anonymous access")
 
         # Create devices if not exist
         for idx, (key, (label, dev_type, uom)) in enumerate(self.sensor_keys.items(), start=1):
@@ -123,6 +152,13 @@ class BasePlugin:
                 Domoticz.Debug(f"Device already exists: {label} ({dev_type})")
 
         Domoticz.Heartbeat(self.poll_interval)
+
+    def get_request_headers(self):
+        """Get HTTP headers including API key if configured"""
+        headers = {'Content-Type': 'application/json'}
+        if self.api_key:
+            headers['X-Api-Key'] = self.api_key
+        return headers
 
     def onHeartbeat(self):
         if self.is_host_alive(Parameters['Address']):
@@ -154,7 +190,8 @@ class BasePlugin:
         """Fetch real-time printer status and temperatures from Moonraker."""
         try:
             query_url = f"{self.moonraker_url}/printer/objects/query?print_stats&heater_bed&extruder&heater_generic chamber&temperature_host CPU&temperature_sensor CPU&temperature_sensor Motherboard MCU&temperature_sensor Printhead MCU"
-            response = requests.get(query_url, timeout=5)
+            headers = self.get_request_headers()
+            response = requests.get(query_url, headers=headers, timeout=5)
             response.raise_for_status()
             data = response.json().get("result", {}).get("status", {})
 
@@ -203,7 +240,8 @@ class BasePlugin:
         """Fetch historical print statistics from Moonraker."""
         try:
             history_url = f"{self.moonraker_url}/server/history/totals"
-            response = requests.get(history_url, timeout=5)
+            headers = self.get_request_headers()
+            response = requests.get(history_url, headers=headers, timeout=5)
             response.raise_for_status()
             data = response.json().get("result", {}).get("job_totals", {})
 
@@ -240,7 +278,8 @@ class BasePlugin:
         """Send system shutdown command to printer host via Moonraker API"""
         try:
             shutdown_url = f"{self.moonraker_url}/machine/shutdown"
-            response = requests.post(shutdown_url, timeout=5)
+            headers = self.get_request_headers()
+            response = requests.post(shutdown_url, headers=headers, timeout=5)
             response.raise_for_status()
             Domoticz.Log("System shutdown command sent successfully")
             return True
