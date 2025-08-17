@@ -7,6 +7,8 @@ A comprehensive Domoticz plugin for monitoring Moonraker-based 3D printers (Klip
 ![Moonraker](https://img.shields.io/badge/Moonraker-API-orange)
 ![Python](https://img.shields.io/badge/Python-3.x-yellow)
 
+![Alt text](dashboard.png?raw=true "Dashboard")
+
 ## Features
 
 ### 🌡️ Real-time Temperature Monitoring

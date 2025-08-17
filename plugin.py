@@ -77,7 +77,7 @@ class BasePlugin:
             "printhead_mcu_temp": ("Printhead MCU Temperature", "Temperature Sensor", "°C"),
             # Job status
             "job_status": ("Job Status", "Selector Switch", ""),
-            "time_left": ("Time Left (min)", "Text", "min"),
+            "time_left": ("Time Left (min)", "Custom Sensor", "min"),
             "job_name": ("Job Name", "Text", ""),
             # Historical stats (Custom Sensor devices with UOM)
             "total_jobs": ("Total Jobs Printed", "Custom Sensor", ""),
